@@ -2,15 +2,17 @@ import torch
 import torch.nn as nn
 import numpy as np
 import time
+import torch.nn.functional as F
 import copy
 from flcore.clients.clientbase import Client
 from torch.utils.data import DataLoader
 from utils.data_utils import read_client_data
-
+from sklearn.preprocessing import label_binarize
+from sklearn import metrics
 
 class clientFomo(Client):
-    def __init__(self, args, id, train_samples, test_samples, **kwargs):
-        super().__init__(args, id, train_samples, test_samples, **kwargs)
+    def __init__(self, args, id, train_samples, test_samples,ref_samples, **kwargs):
+        super().__init__(args, id, train_samples, test_samples, ref_samples, **kwargs)
         
         self.num_clients = args.num_clients
         self.old_model = copy.deepcopy(self.model)
@@ -173,3 +175,73 @@ class clientFomo(Client):
             return torch.tensor(weights)
         else:
             return torch.tensor([])
+    
+    def test_metrics(self):
+        testloaderfull = self.load_test_data()
+        # self.model = self.load_model('model')
+        # self.model.to(self.device)
+        self.model.eval()
+
+        test_acc = 0
+        test_num = 0
+        y_prob = []
+        y_true = []
+        
+        with torch.no_grad():
+            for x, y in testloaderfull:
+                if type(x) == type([]):
+                    x[0] = x[0].to(self.device)
+                else:
+                    x = x.to(self.device)
+                y = y.to(self.device)
+                output = self.model(x)
+
+                test_acc += (torch.sum(torch.argmax(output, dim=1) == y)).item()
+                test_num += y.shape[0]
+
+                y_prob.append(F.softmax(output).detach().cpu().numpy())
+                y_true.append(label_binarize(y.detach().cpu().numpy(), classes=np.arange(self.num_classes)))
+
+        # self.model.cpu()
+
+        y_prob = np.concatenate(y_prob, axis=0)
+        y_true = np.concatenate(y_true, axis=0)
+
+        auc = metrics.roc_auc_score(y_true, y_prob, average='micro')
+        
+        return test_acc, test_num, auc
+
+    def ref_metrics(self):
+        refloaderfull = self.load_ref_data()
+        # self.model = self.load_model('model')
+        # self.model.to(self.device)
+        self.model.eval()
+
+        ref_acc = 0
+        ref_num = 0
+        y_prob = []
+        y_true = []
+        
+        with torch.no_grad():
+            for x, y in refloaderfull:
+                if type(x) == type([]):
+                    x[0] = x[0].to(self.device)
+                else:
+                    x = x.to(self.device)
+                y = y.to(self.device)
+                output = self.model(x)
+
+                ref_acc += (torch.sum(torch.argmax(output, dim=1) == y)).item()
+                ref_num += y.shape[0]
+
+                y_prob.append(F.softmax(output).detach().cpu().numpy())
+                y_true.append(label_binarize(y.detach().cpu().numpy(), classes=np.arange(self.num_classes)))
+
+        # self.model.cpu()
+
+        y_prob = np.concatenate(y_prob, axis=0)
+        y_true = np.concatenate(y_true, axis=0)
+
+        auc = metrics.roc_auc_score(y_true, y_prob, average='micro')
+        
+        return ref_acc, ref_num, auc
