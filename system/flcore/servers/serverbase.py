@@ -230,8 +230,8 @@ class Server(object):
         aucs_ref = [a / n for a, n in zip(stats_ref[3], stats_ref[1])]
         
         if acc == None:
-            self.rs_test_acc.append(test_acc)
-            self.rs_ref_acc.append(ref_acc)
+            self.rs_test_acc.append(accs_test)
+            self.rs_ref_acc.append(accs_ref)
         else:
             acc.append(test_acc)
             

@@ -154,7 +154,7 @@ class Client(object):
                 else:
                     x = x.to(self.device)
                 y = y.to(self.device)
-                output = self.pmodel(x)
+                output = self.model(x)
 
                 ref_acc += (torch.sum(torch.argmax(output, dim=1) == y)).item()
                 ref_num += y.shape[0]
