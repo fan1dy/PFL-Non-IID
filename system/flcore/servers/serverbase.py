@@ -39,7 +39,9 @@ class Server(object):
         self.uploaded_models = []
 
         self.rs_test_acc = []
+        self.rs_ref_acc = []
         self.rs_test_auc = []
+        self.rs_ref_auc = []
         self.rs_train_loss = []
 
         self.times = times
@@ -51,11 +53,13 @@ class Server(object):
     def set_clients(self, args, clientObj):
         for i, train_slow, send_slow in zip(range(self.num_clients), self.train_slow_clients, self.send_slow_clients):
             train_data = read_client_data(self.dataset, i, is_train=True)
-            test_data = read_client_data(self.dataset, i, is_train=False)
+            test_data, ref_data = read_client_data(self.dataset, i, is_train=False)
+
             client = clientObj(args, 
                             id=i, 
                             train_samples=len(train_data), 
                             test_samples=len(test_data), 
+                            ref_samples = len(ref_data),
                             train_slow=train_slow, 
                             send_slow=send_slow)
             self.clients.append(client)
@@ -150,6 +154,16 @@ class Server(object):
                 hf.create_dataset('rs_test_auc', data=self.rs_test_auc)
                 hf.create_dataset('rs_train_loss', data=self.rs_train_loss)
 
+        if (len(self.rs_ref_acc)):
+            algo = algo + "_ ref_" + str(self.times)
+            file_path = result_path + "{}.h5".format(algo)
+            print("File path: " + file_path)
+
+            with h5py.File(file_path, 'w') as hf:
+                hf.create_dataset('rs_ref_acc', data=self.rs_ref_acc)
+                hf.create_dataset('rs_ref_auc', data=self.rs_ref_auc)
+          
+
     def save_item(self, item, item_name):
         if not os.path.exists(self.save_folder_name):
             os.makedirs(self.save_folder_name)
@@ -172,6 +186,21 @@ class Server(object):
 
         return ids, num_samples, tot_correct, tot_auc
 
+    def ref_metrics(self):
+        num_samples = []
+        tot_correct = []
+        tot_auc = []
+        for c in self.clients:
+            ct, ns, auc = c.ref_metrics()
+            tot_correct.append(ct*1.0)
+            tot_auc.append(auc*ns)
+            num_samples.append(ns)
+
+        ids = [c.id for c in self.clients]
+
+        return ids, num_samples, tot_correct, tot_auc
+
+
     def train_metrics(self):
         num_samples = []
         losses = []
@@ -186,19 +215,26 @@ class Server(object):
 
     # evaluate selected clients
     def evaluate(self, acc=None, loss=None):
-        stats = self.test_metrics()
+        stats_test = self.test_metrics()
+        stats_ref = self.ref_metrics()
         stats_train = self.train_metrics()
 
-        test_acc = sum(stats[2])*1.0 / sum(stats[1])
-        test_auc = sum(stats[3])*1.0 / sum(stats[1])
+        test_acc = sum(stats_test[2])*1.0 / sum(stats_test[1])
+        test_auc = sum(stats_test[3])*1.0 / sum(stats_test[1])
+        ref_acc = sum(stats_ref[2])*1.0 / sum(stats_ref[1])
+        ref_auc = sum(stats_ref[3])*1.0 / sum(stats_ref[1])
         train_loss = sum(stats_train[2])*1.0 / sum(stats_train[1])
-        accs = [a / n for a, n in zip(stats[2], stats[1])]
-        aucs = [a / n for a, n in zip(stats[3], stats[1])]
+        accs_test = [a / n for a, n in zip(stats_test[2], stats_test[1])]
+        aucs_test = [a / n for a, n in zip(stats_test[3], stats_test[1])]
+        accs_ref = [a / n for a, n in zip(stats_ref[2], stats_ref[1])]
+        aucs_ref = [a / n for a, n in zip(stats_ref[3], stats_ref[1])]
         
         if acc == None:
-            self.rs_test_acc.append(test_acc)
+            self.rs_test_acc.append(accs_test)
+            self.rs_ref_acc.append(accs_ref)
         else:
             acc.append(test_acc)
+            
         
         if loss == None:
             self.rs_train_loss.append(train_loss)
@@ -208,9 +244,13 @@ class Server(object):
         print("Averaged Train Loss: {:.4f}".format(train_loss))
         print("Averaged Test Accurancy: {:.4f}".format(test_acc))
         print("Averaged Test AUC: {:.4f}".format(test_auc))
+        print("Averaged Ref Accurancy: {:.4f}".format(ref_acc))
+        print("Averaged Ref AUC: {:.4f}".format(ref_auc))
         # self.print_(test_acc, train_acc, train_loss)
-        print("Std Test Accurancy: {:.4f}".format(np.std(accs)))
-        print("Std Test AUC: {:.4f}".format(np.std(aucs)))
+        print("Std Test Accurancy: {:.4f}".format(np.std(accs_test)))
+        print("Std Test AUC: {:.4f}".format(np.std(aucs_test)))
+        print("Std Ref Accurancy: {:.4f}".format(np.std(accs_ref)))
+        print("Std Ref AUC: {:.4f}".format(np.std(aucs_ref)))
 
     def print_(self, test_acc, test_auc, train_loss):
         print("Average Test Accurancy: {:.4f}".format(test_acc))

@@ -9,7 +9,6 @@ from sklearn.preprocessing import label_binarize
 from sklearn import metrics
 from utils.data_utils import read_client_data
 
-
 class Client(object):
     """
     Base class for clients in federated learning.
