@@ -59,7 +59,7 @@ def run(args):
 
         # Generate args.model
         if model_str == "mlr":
-            if args.dataset == "mnist" or args.dataset == "fmnist":
+            if args.dataset == "MNIST" or args.dataset == "fmnist":
                 args.model = Mclr_Logistic(1*28*28, num_classes=args.num_classes).to(args.device)
             elif args.dataset == "Cifar10" or args.dataset == "Cifar100":
                 args.model = Mclr_Logistic(3*32*32, num_classes=args.num_classes).to(args.device)
@@ -67,7 +67,7 @@ def run(args):
                 args.model = Mclr_Logistic(60, num_classes=args.num_classes).to(args.device)
 
         elif model_str == "cnn":
-            if args.dataset == "mnist" or args.dataset == "fmnist":
+            if args.dataset == "MNIST" or args.dataset == "fmnist":
                 args.model = FedAvgCNN(in_features=1, num_classes=args.num_classes, dim=1024).to(args.device)
             elif args.dataset == "Cifar10" or args.dataset == "Cifar100":
                 args.model = FedAvgCNN(in_features=3, num_classes=args.num_classes, dim=1600).to(args.device)
