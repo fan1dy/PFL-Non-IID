@@ -222,12 +222,12 @@ def run(args):
     print(f"\nAverage time cost: {round(np.average(time_list), 2)}s.")
     
 
-    # Global average
-    average_data(dataset=args.dataset, 
-                algorithm=args.algorithm, 
-                goal=args.goal, 
-                times=args.times, 
-                length=args.global_rounds/args.eval_gap+1)
+    # # Global average
+    # average_data(dataset=args.dataset, 
+    #             algorithm=args.algorithm, 
+    #             goal=args.goal, 
+    #             times=args.times, 
+    #             length=args.global_rounds/args.eval_gap+1)
 
     print("All done!")
 
