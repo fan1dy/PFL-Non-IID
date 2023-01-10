@@ -109,9 +109,9 @@ class Client(object):
         y_prob = np.concatenate(y_prob, axis=0)
         y_true = np.concatenate(y_true, axis=0)
 
-        auc = metrics.roc_auc_score(y_true, y_prob, average='micro')
+       # auc = metrics.roc_auc_score(y_true, y_prob, average='micro')
         
-        return test_acc, test_num, auc
+        return test_acc, test_num#, auc
 
     def train_metrics(self):
         trainloader = self.load_train_data()
@@ -167,9 +167,9 @@ class Client(object):
         y_prob = np.concatenate(y_prob, axis=0)
         y_true = np.concatenate(y_true, axis=0)
 
-        auc = metrics.roc_auc_score(y_true, y_prob, average='micro')
+        #auc = metrics.roc_auc_score(y_true, y_prob, average='micro')
         
-        return ref_acc, ref_num, auc
+        return ref_acc, ref_num#, auc
 
     # def get_next_train_batch(self):
     #     try:
