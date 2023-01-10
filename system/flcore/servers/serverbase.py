@@ -140,7 +140,7 @@ class Server(object):
         
     def save_results(self):
         algo = self.dataset + "_" + self.algorithm
-        result_path = "../results/"
+        result_path = "../results/new/"
         if not os.path.exists(result_path):
             os.makedirs(result_path)
 
@@ -175,30 +175,30 @@ class Server(object):
     def test_metrics(self):
         num_samples = []
         tot_correct = []
-        tot_auc = []
+        #tot_auc = []
         for c in self.clients:
-            ct, ns, auc = c.test_metrics()
+            ct, ns  = c.test_metrics()
             tot_correct.append(ct*1.0)
-            tot_auc.append(auc*ns)
+            #tot_auc.append(auc*ns)
             num_samples.append(ns)
 
         ids = [c.id for c in self.clients]
 
-        return ids, num_samples, tot_correct, tot_auc
+        return ids, num_samples, tot_correct#, tot_auc
 
     def ref_metrics(self):
         num_samples = []
         tot_correct = []
-        tot_auc = []
+        #tot_auc = []
         for c in self.clients:
-            ct, ns, auc = c.ref_metrics()
+            ct, ns = c.ref_metrics()
             tot_correct.append(ct*1.0)
-            tot_auc.append(auc*ns)
+            #tot_auc.append(auc*ns)
             num_samples.append(ns)
 
         ids = [c.id for c in self.clients]
 
-        return ids, num_samples, tot_correct, tot_auc
+        return ids, num_samples, tot_correct#, tot_auc
 
 
     def train_metrics(self):
@@ -220,16 +220,18 @@ class Server(object):
         stats_train = self.train_metrics()
 
         test_acc = sum(stats_test[2])*1.0 / sum(stats_test[1])
-        test_auc = sum(stats_test[3])*1.0 / sum(stats_test[1])
+        #test_auc = sum(stats_test[3])*1.0 / sum(stats_test[1])
         ref_acc = sum(stats_ref[2])*1.0 / sum(stats_ref[1])
-        ref_auc = sum(stats_ref[3])*1.0 / sum(stats_ref[1])
+        #ref_auc = sum(stats_ref[3])*1.0 / sum(stats_ref[1])
         train_loss = sum(stats_train[2])*1.0 / sum(stats_train[1])
         accs_test = [a / n for a, n in zip(stats_test[2], stats_test[1])]
-        aucs_test = [a / n for a, n in zip(stats_test[3], stats_test[1])]
+        #aucs_test = [a / n for a, n in zip(stats_test[3], stats_test[1])]
         accs_ref = [a / n for a, n in zip(stats_ref[2], stats_ref[1])]
-        aucs_ref = [a / n for a, n in zip(stats_ref[3], stats_ref[1])]
+        #aucs_ref = [a / n for a, n in zip(stats_ref[3], stats_ref[1])]
         
         if acc == None:
+            #self.rs_test_acc.append(test_acc)
+            #self.rs_ref_acc.append(ref_acc)
             self.rs_test_acc.append(accs_test)
             self.rs_ref_acc.append(accs_ref)
         else:
@@ -243,18 +245,18 @@ class Server(object):
 
         print("Averaged Train Loss: {:.4f}".format(train_loss))
         print("Averaged Test Accurancy: {:.4f}".format(test_acc))
-        print("Averaged Test AUC: {:.4f}".format(test_auc))
+        #print("Averaged Test AUC: {:.4f}".format(test_auc))
         print("Averaged Ref Accurancy: {:.4f}".format(ref_acc))
-        print("Averaged Ref AUC: {:.4f}".format(ref_auc))
+        #print("Averaged Ref AUC: {:.4f}".format(ref_auc))
         # self.print_(test_acc, train_acc, train_loss)
         print("Std Test Accurancy: {:.4f}".format(np.std(accs_test)))
-        print("Std Test AUC: {:.4f}".format(np.std(aucs_test)))
+        #print("Std Test AUC: {:.4f}".format(np.std(aucs_test)))
         print("Std Ref Accurancy: {:.4f}".format(np.std(accs_ref)))
-        print("Std Ref AUC: {:.4f}".format(np.std(aucs_ref)))
+        #print("Std Ref AUC: {:.4f}".format(np.std(aucs_ref)))
 
     def print_(self, test_acc, test_auc, train_loss):
         print("Average Test Accurancy: {:.4f}".format(test_acc))
-        print("Average Test AUC: {:.4f}".format(test_auc))
+        #print("Average Test AUC: {:.4f}".format(test_auc))
         print("Average Train Loss: {:.4f}".format(train_loss))
 
     def check_done(self, acc_lss, top_cnt=None, div_value=None):

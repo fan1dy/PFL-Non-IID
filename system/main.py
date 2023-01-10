@@ -8,7 +8,7 @@ import warnings
 import numpy as np
 from torch.nn.functional import dropout
 import torchvision
-
+from efficientnet_pytorch import EfficientNet
 from flcore.servers.serveravg import FedAvg
 from flcore.servers.serverpFedMe import pFedMe
 from flcore.servers.serverperavg import PerAvg
@@ -130,6 +130,9 @@ def run(args):
         elif model_str == "TextCNN":
             args.model = TextCNN(hidden_dim=hidden_dim, max_len=max_len, vocab_size=vocab_size, 
                             num_classes=args.num_classes).to(args.device)
+        
+        elif model_str == "EfficientNet":
+            args.model = EfficientNet.from_pretrained('efficientnet-b0',num_classes=args.num_classes).to(args.device)
         else:
             raise NotImplementedError
 
@@ -223,11 +226,11 @@ def run(args):
     
 
     # Global average
-    average_data(dataset=args.dataset, 
-                algorithm=args.algorithm, 
-                goal=args.goal, 
-                times=args.times, 
-                length=args.global_rounds/args.eval_gap+1)
+   # average_data(dataset=args.dataset, 
+    #            algorithm=args.algorithm, 
+     #           goal=args.goal, 
+      #          times=args.times, 
+       #         length=args.global_rounds/args.eval_gap+1)
 
     print("All done!")
 
@@ -244,7 +247,7 @@ if __name__ == "__main__":
     parser.add_argument('-dev', "--device", type=str, default="cuda",
                         choices=["cpu", "cuda"])
     parser.add_argument('-did', "--device_id", type=str, default="0")
-    parser.add_argument('-data', "--dataset", type=str, default="mnist")
+    parser.add_argument('-data', "--dataset", type=str, default="MNIST")
     parser.add_argument('-nb', "--num_classes", type=int, default=10)
     parser.add_argument('-m', "--model", type=str, default="cnn")
     parser.add_argument('-p', "--predictor", type=str, default="cnn")
@@ -256,7 +259,7 @@ if __name__ == "__main__":
     parser.add_argument('-algo', "--algorithm", type=str, default="FedAvg")
     parser.add_argument('-jr', "--join_ratio", type=float, default=1.0,
                         help="Ratio of clients per round")
-    parser.add_argument('-nc', "--num_clients", type=int, default=20,
+    parser.add_argument('-nc', "--num_clients", type=int, default=10,
                         help="Total number of clients")
     parser.add_argument('-pv', "--prev", type=int, default=0,
                         help="Previous Running times")
