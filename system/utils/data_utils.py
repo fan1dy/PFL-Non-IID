@@ -91,7 +91,7 @@ def read_ref_data(dataset):
         ref_y.extend(tmp['y'])
     return torch.Tensor(ref_x).type(torch.float32), torch.Tensor(ref_y).type(torch.float32)
 
-def read_client_data(dataset, idx, is_train=True):
+def read_client_data(dataset, idx, is_train=True, setting ='normal'):
     if dataset[:2] == "ag" or dataset[:2] == "SS":
         return read_client_data_text(dataset, idx)
 
@@ -99,6 +99,23 @@ def read_client_data(dataset, idx, is_train=True):
         train_data = read_data(dataset, idx, is_train)
         X_train = torch.Tensor(train_data['x']).type(torch.float32)
         y_train = torch.Tensor(train_data['y']).type(torch.int64)
+        if setting == 'randomize':
+            #y_train = torch.Tensor(train_data['y']).type(torch.int64)
+            y_train = torch.randperm(y_train.size()[0])
+        elif setting == 'flipped':
+            if 'Cifar100' in dataset:
+                print('before:',y_train[0:10])
+                y_train = (y_train+3)%100
+                print('after:',y_train[0:10])
+            elif 'fed-isic' in dataset:
+                print('before:',y_train[0:10])
+                y_train = (y_train+3)%8
+                print('after:',y_train[0:10])
+            else:
+                print('before:',y_train[0:10])
+                y_train = (y_train+3)%10
+                print('after:',y_train[0:10])
+
 
         train_data = [(x, y) for x, y in zip(X_train, y_train)]
         return train_data

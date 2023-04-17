@@ -81,7 +81,7 @@ def run(args):
         elif model_str == "dnn": # non-convex
             if args.dataset == "mnist" or args.dataset == "fmnist":
                 args.model = DNN(1*28*28, 100, num_classes=args.num_classes).to(args.device)
-            elif args.dataset == "Cifar10" or args.dataset == "Cifar100":
+            elif args.dataset[0:5]=="Cifar10" or args.dataset == "Cifar100":
                 args.model = DNN(3*32*32, 100, num_classes=args.num_classes).to(args.device)
             else:
                 args.model = DNN(60, 20, num_classes=args.num_classes).to(args.device)
@@ -312,6 +312,7 @@ if __name__ == "__main__":
     parser.add_argument('-ta', "--tau", type=float, default=1.0)
     # FedBABU
     parser.add_argument('-fts', "--fine_tuning_steps", type=int, default=1)
+    parser.add_argument('-setting', "--setting", type=str, default='normal', help='choose between [normal, evil]')
 
     args = parser.parse_args()
 

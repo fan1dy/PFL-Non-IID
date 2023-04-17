@@ -40,8 +40,8 @@ class Server(object):
 
         self.rs_test_acc = []
         self.rs_ref_acc = []
-        self.rs_test_auc = []
-        self.rs_ref_auc = []
+        self.rs_test_bacc = []
+        self.rs_ref_bacc = []
         self.rs_train_loss = []
 
         self.times = times
@@ -50,9 +50,25 @@ class Server(object):
         self.train_slow_rate = args.train_slow_rate
         self.send_slow_rate = args.send_slow_rate
 
+        self.setting = args.setting
+
     def set_clients(self, args, clientObj):
         for i, train_slow, send_slow in zip(range(self.num_clients), self.train_slow_clients, self.send_slow_clients):
-            train_data = read_client_data(self.dataset, i, is_train=True)
+            if args.setting == 'evil':
+                if args.dataset[0:5] == 'Cifar':
+                    if i in [2,9]:
+                        train_data = read_client_data(self.dataset, i, is_train=True, setting ='flipped')
+                    else:
+                        train_data = read_client_data(self.dataset, i, is_train=True, setting ='normal')
+                elif args.dataset[0:13] == 'fed-isic-2019' :
+                    if i in [1,2]:
+                        print('evil_index:',i)
+                        train_data = read_client_data(self.dataset, i, is_train=True, setting ='flipped')
+                    else:
+                        train_data = read_client_data(self.dataset, i, is_train=True, setting ='normal')
+            
+            else:
+                train_data = read_client_data(self.dataset, i, is_train=True, setting ='normal')
             test_data, ref_data = read_client_data(self.dataset, i, is_train=False)
 
             client = clientObj(args, 
@@ -63,7 +79,7 @@ class Server(object):
                             train_slow=train_slow, 
                             send_slow=send_slow)
             self.clients.append(client)
-
+  
     # random select slow clients
     def select_slow_clients(self, slow_rate):
         slow_clients = [False for i in range(self.num_clients)]
@@ -140,28 +156,31 @@ class Server(object):
         
     def save_results(self):
         algo = self.dataset + "_" + self.algorithm
-        result_path = "../results/new/"
+        result_path = "../results/april/"
         if not os.path.exists(result_path):
             os.makedirs(result_path)
 
         if (len(self.rs_test_acc)):
-            algo = algo + "_" + self.goal + "_" + str(self.times)
+            algo = algo + "_" + str(self.times) +'_' +self.setting
             file_path = result_path + "{}.h5".format(algo)
             print("File path: " + file_path)
 
             with h5py.File(file_path, 'w') as hf:
                 hf.create_dataset('rs_test_acc', data=self.rs_test_acc)
-                hf.create_dataset('rs_test_auc', data=self.rs_test_auc)
-                hf.create_dataset('rs_train_loss', data=self.rs_train_loss)
-
-        if (len(self.rs_ref_acc)):
-            algo = algo + "_ ref_" + str(self.times)
-            file_path = result_path + "{}.h5".format(algo)
-            print("File path: " + file_path)
-
-            with h5py.File(file_path, 'w') as hf:
                 hf.create_dataset('rs_ref_acc', data=self.rs_ref_acc)
-                hf.create_dataset('rs_ref_auc', data=self.rs_ref_auc)
+                hf.create_dataset('rs_test_bacc', data=self.rs_test_bacc)
+                hf.create_dataset('rs_ref_bacc', data=self.rs_ref_bacc)
+                # hf.create_dataset('rs_test_auc', data=self.rs_test_auc)
+                # hf.create_dataset('rs_train_loss', data=self.rs_train_loss)
+
+        # if (len(self.rs_ref_acc)):
+        #     algo = algo + "_ref_"+ self.model + "_" + str(self.times)
+        #     file_path = result_path + "{}.h5".format(algo)
+        #     print("File path: " + file_path)
+
+        #     with h5py.File(file_path, 'w') as hf:
+        #         hf.create_dataset('rs_ref_acc', data=self.rs_ref_acc)
+                # hf.create_dataset('rs_ref_auc', data=self.rs_ref_auc)
           
 
     def save_item(self, item, item_name):
@@ -175,30 +194,34 @@ class Server(object):
     def test_metrics(self):
         num_samples = []
         tot_correct = []
+        bacc_list = []
         #tot_auc = []
         for c in self.clients:
-            ct, ns  = c.test_metrics()
+            ct, ns, bacc  = c.test_metrics()
             tot_correct.append(ct*1.0)
             #tot_auc.append(auc*ns)
             num_samples.append(ns)
+            bacc_list.append(bacc)
 
         ids = [c.id for c in self.clients]
 
-        return ids, num_samples, tot_correct#, tot_auc
+        return ids, num_samples, tot_correct, bacc_list#, tot_auc
 
     def ref_metrics(self):
         num_samples = []
         tot_correct = []
+        bacc_list = []
         #tot_auc = []
         for c in self.clients:
-            ct, ns = c.ref_metrics()
+            ct, ns, bacc = c.ref_metrics()
             tot_correct.append(ct*1.0)
             #tot_auc.append(auc*ns)
             num_samples.append(ns)
+            bacc_list.append(bacc)
 
         ids = [c.id for c in self.clients]
 
-        return ids, num_samples, tot_correct#, tot_auc
+        return ids, num_samples, tot_correct, bacc_list#, tot_auc
 
 
     def train_metrics(self):
@@ -228,12 +251,16 @@ class Server(object):
         #aucs_test = [a / n for a, n in zip(stats_test[3], stats_test[1])]
         accs_ref = [a / n for a, n in zip(stats_ref[2], stats_ref[1])]
         #aucs_ref = [a / n for a, n in zip(stats_ref[3], stats_ref[1])]
+        baccs_test = stats_test[-1]
+        baccs_ref = stats_ref[-1]
         
         if acc == None:
             #self.rs_test_acc.append(test_acc)
             #self.rs_ref_acc.append(ref_acc)
             self.rs_test_acc.append(accs_test)
             self.rs_ref_acc.append(accs_ref)
+            self.rs_test_bacc.append(baccs_test)
+            self.rs_ref_bacc.append(baccs_ref)
         else:
             acc.append(test_acc)
             

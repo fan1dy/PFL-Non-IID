@@ -129,12 +129,13 @@ class clientDitto(Client):
 
         # self.model.cpu()
 
-        y_prob = np.concatenate(y_prob, axis=0)
-        y_true = np.concatenate(y_true, axis=0)
+        y_prob = np.argmax(np.concatenate(y_prob, axis=0),1)
+        y_true = np.argmax(np.concatenate(y_true, axis=0),1)
+        bacc = metrics.balanced_accuracy_score(y_true, y_prob)
 
         #auc = metrics.roc_auc_score(y_true, y_prob, average='micro')
         
-        return test_acc, test_num#, auc
+        return test_acc, test_num, bacc
 
     def ref_metrics(self):
         refloaderfull = self.load_ref_data()
@@ -164,9 +165,9 @@ class clientDitto(Client):
 
         # self.model.cpu()
 
-        y_prob = np.concatenate(y_prob, axis=0)
-        y_true = np.concatenate(y_true, axis=0)
-
+        y_prob = np.argmax(np.concatenate(y_prob, axis=0),1)
+        y_true = np.argmax(np.concatenate(y_true, axis=0),1)
+        bacc = metrics.balanced_accuracy_score(y_true, y_prob)
         #auc = metrics.roc_auc_score(y_true, y_prob, average='micro')
         
-        return ref_acc, ref_num#, auc
+        return ref_acc, ref_num, bacc
